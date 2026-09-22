@@ -1,736 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>TEKKO AI</title>
+    <title>TEKKO AI</title>
 
-<style>
-* {
-    box-sizing: border-box;
-}
-
-body {
-    margin: 0;
-    min-height: 100vh;
-    font-family: Arial, sans-serif;
-    background: #080b12;
-    color: white;
-    overflow: hidden;
-}
-
-/* APP */
-
-.app {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    max-width: 1000px;
-    margin: auto;
-    background: #0d111a;
-}
-
-/* HEADER */
-
-header {
-    height: 70px;
-    padding: 0 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #252c3a;
-    background: #111722;
-}
-
-.logo-area {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.logo {
-    width: 44px;
-    height: 44px;
-    border-radius: 13px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    font-size: 22px;
-    font-weight: bold;
-
-    background: linear-gradient(
-        135deg,
-        #6c63ff,
-        #9b94ff
-    );
-
-    box-shadow:
-        0 0 25px rgba(108,99,255,.35);
-}
-
-.logo-text h1 {
-    margin: 0;
-    font-size: 20px;
-}
-
-.logo-text span {
-    color: #8993a7;
-    font-size: 12px;
-}
-
-.clear {
-    border: 1px solid #30384a;
-    background: #171d29;
-    color: white;
-
-    width: 40px;
-    height: 40px;
-
-    border-radius: 10px;
-
-    cursor: pointer;
-}
-
-.clear:hover {
-    background: #242c3c;
-}
-
-/* CHAT */
-
-#chat {
-    flex: 1;
-    overflow-y: auto;
-    padding: 25px 18px;
-}
-
-/* WELCOME */
-
-#welcome {
-    max-width: 600px;
-    margin: 100px auto;
-    text-align: center;
-}
-
-.big-logo {
-    width: 80px;
-    height: 80px;
-
-    margin: auto;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 23px;
-
-    font-size: 38px;
-    font-weight: bold;
-
-    background: linear-gradient(
-        135deg,
-        #6c63ff,
-        #9b94ff
-    );
-
-    box-shadow:
-        0 0 40px rgba(108,99,255,.35);
-}
-
-#welcome h2 {
-    font-size: 30px;
-    margin-bottom: 8px;
-}
-
-#welcome p {
-    color: #8993a7;
-}
-
-.suggestions {
-    margin-top: 25px;
-
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.suggestion {
-    padding: 11px 15px;
-
-    border: 1px solid #30384a;
-    border-radius: 12px;
-
-    background: #141a26;
-    color: white;
-
-    cursor: pointer;
-}
-
-.suggestion:hover {
-    border-color: #6c63ff;
-}
-
-/* MESSAGES */
-
-.message-row {
-    display: flex;
-    max-width: 760px;
-    margin: 16px auto;
-}
-
-.message-row.user {
-    justify-content: flex-end;
-}
-
-.message {
-    max-width: 75%;
-
-    padding: 13px 16px;
-
-    line-height: 1.5;
-
-    white-space: pre-wrap;
-
-    border-radius: 17px;
-}
-
-.user-message {
-    background: #252d3d;
-    border-bottom-right-radius: 5px;
-}
-
-.ai-message {
-    background: #151b27;
-    border: 1px solid #2a3242;
-    border-bottom-left-radius: 5px;
-}
-
-/* INPUT */
-
-.input-area {
-    display: flex;
-    gap: 10px;
-
-    padding: 14px;
-
-    border-top: 1px solid #252c3a;
-
-    background: #111722;
-}
-
-#input {
-    flex: 1;
-
-    min-height: 48px;
-    max-height: 150px;
-
-    resize: none;
-
-    padding: 14px;
-
-    border: 1px solid #30384a;
-    border-radius: 15px;
-
-    outline: none;
-
-    background: #171d29;
-    color: white;
-}
-
-#input:focus {
-    border-color: #6c63ff;
-}
-
-#send {
-    width: 52px;
-
-    border: none;
-    border-radius: 15px;
-
-    background: linear-gradient(
-        135deg,
-        #6c63ff,
-        #918aff
-    );
-
-    color: white;
-
-    font-size: 22px;
-
-    cursor: pointer;
-}
-
-#send:hover {
-    transform: translateY(-2px);
-}
-
-/* FOOTER */
-
-footer {
-    text-align: center;
-    padding: 7px;
-
-    color: #596274;
-
-    font-size: 10px;
-}
-
-/* MOBILE */
-
-@media(max-width:600px) {
-
-    #welcome {
-        margin: 60px auto;
-    }
-
-    #welcome h2 {
-        font-size: 25px;
-    }
-
-    .message {
-        max-width: 88%;
-    }
-
-    .suggestions {
-        flex-direction: column;
-    }
-
-    .suggestion {
-        width: 100%;
-    }
-}
-</style>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div class="app">
+    <div class="app">
 
-<header>
+        <!-- HEADER -->
+        <header class="topbar">
 
-    <div class="logo-area">
+            <div class="brand">
 
-        <div class="logo">
-            T
-        </div>
+                <div class="logo">
+                    T
+                </div>
 
-        <div class="logo-text">
+                <div class="brand-text">
+                    <h1>TEKKO</h1>
+                    <span>AI Assistant</span>
+                </div>
 
-            <h1>TEKKO</h1>
+            </div>
 
-            <span>AI Assistant</span>
+            <button
+                id="clearButton"
+                class="clear-button"
+                title="Clear conversation"
+                type="button"
+            >
+                🗑️
+            </button>
 
-        </div>
+        </header>
+
+
+        <!-- CHAT -->
+        <main id="chat" class="chat">
+
+            <section id="welcome" class="welcome">
+
+                <div class="welcome-logo">
+                    T
+                </div>
+
+                <h2>
+                    Hey! I'm TEKKO 🤖
+                </h2>
+
+                <p>
+                    Your personal AI assistant.
+                </p>
+
+                <div class="suggestions">
+
+                    <button
+                        class="suggestion"
+                        data-message="Give me a cool project idea"
+                        type="button"
+                    >
+                        💡 Give me an idea
+                    </button>
+
+                    <button
+                        class="suggestion"
+                        data-message="Help me with coding"
+                        type="button"
+                    >
+                        💻 Help with coding
+                    </button>
+
+                    <button
+                        class="suggestion"
+                        data-message="Tell me something interesting"
+                        type="button"
+                    >
+                        🧠 Tell me something
+                    </button>
+
+                </div>
+
+            </section>
+
+        </main>
+
+
+        <!-- INPUT -->
+        <form id="chatForm" class="input-area">
+
+            <textarea
+                id="messageInput"
+                placeholder="Message TEKKO..."
+                rows="1"
+                autocomplete="off"
+            ></textarea>
+
+            <button
+                id="sendButton"
+                type="submit"
+                aria-label="Send message"
+            >
+                ➤
+            </button>
+
+        </form>
+
+
+        <footer>
+            TEKKO AI v1.0 • Local Prototype
+        </footer>
 
     </div>
 
-    <button
-        class="clear"
-        onclick="clearChat()"
-        title="Clear chat"
-    >
-        🗑️
-    </button>
 
-</header>
-
-
-<main id="chat">
-
-    <section id="welcome">
-
-        <div class="big-logo">
-            T
-        </div>
-
-        <h2>
-            Hey! I'm TEKKO 🤖
-        </h2>
-
-        <p>
-            Your personal AI assistant.
-        </p>
-
-        <div class="suggestions">
-
-            <button
-                class="suggestion"
-                onclick="suggest('Give me a cool project idea')"
-            >
-                💡 Give me an idea
-            </button>
-
-            <button
-                class="suggestion"
-                onclick="suggest('Help me with coding')"
-            >
-                💻 Help with coding
-            </button>
-
-            <button
-                class="suggestion"
-                onclick="suggest('Tell me something interesting')"
-            >
-                🧠 Tell me something
-            </button>
-
-        </div>
-
-    </section>
-
-</main>
-
-
-<form
-    class="input-area"
-    onsubmit="sendMessage(event)"
->
-
-<textarea
-    id="input"
-    placeholder="Message TEKKO..."
-    rows="1"
-></textarea>
-
-<button
-    id="send"
-    type="submit"
->
-    ➤
-</button>
-
-</form>
-
-
-<footer>
-    TEKKO AI v1.0 • Local Prototype
-</footer>
-
-</div>
-
-
-<script>
-
-/* ======================================
-   TEKKO AI v1.0
-====================================== */
-
-const input =
-    document.getElementById("input");
-
-const chat =
-    document.getElementById("chat");
-
-let conversation = [];
-
-
-/* ======================================
-   ADD MESSAGE
-====================================== */
-
-function addMessage(text, type) {
-
-    const row =
-        document.createElement("div");
-
-    row.className =
-        "message-row " + type;
-
-
-    const message =
-        document.createElement("div");
-
-    message.className =
-        "message " +
-        (type === "user"
-            ? "user-message"
-            : "ai-message");
-
-
-    message.textContent = text;
-
-
-    row.appendChild(message);
-
-    chat.appendChild(row);
-
-    chat.scrollTop =
-        chat.scrollHeight;
-}
-
-
-/* ======================================
-   SEND
-====================================== */
-
-function sendMessage(event) {
-
-    event.preventDefault();
-
-    const text =
-        input.value.trim();
-
-    if (!text) return;
-
-
-    const welcome =
-        document.getElementById("welcome");
-
-    if (welcome) {
-        welcome.remove();
-    }
-
-
-    addMessage(
-        text,
-        "user"
-    );
-
-
-    conversation.push({
-        role: "user",
-        text: text
-    });
-
-
-    input.value = "";
-
-    resize();
-
-
-    /* Temporary local AI */
-
-    setTimeout(() => {
-
-        const reply =
-            generateReply(text);
-
-        addMessage(
-            reply,
-            "ai"
-        );
-
-
-        conversation.push({
-            role: "assistant",
-            text: reply
-        });
-
-    }, 600);
-}
-
-
-/* ======================================
-   SIMPLE AI BRAIN
-====================================== */
-
-function generateReply(text) {
-
-    const lower =
-        text.toLowerCase();
-
-
-    if (
-        lower.includes("hello") ||
-        lower.includes("hi") ||
-        lower.includes("hey")
-    ) {
-
-        return "Hey! 👋 I'm TEKKO. What are we building today?";
-    }
-
-
-    if (
-        lower.includes("coding") ||
-        lower.includes("code") ||
-        lower.includes("program")
-    ) {
-
-        return "💻 Coding mode activated! Tell me what you want to build and I'll help you plan it.";
-    }
-
-
-    if (
-        lower.includes("roblox")
-    ) {
-
-        return "🎮 Roblox detected! You could build a simulator, tycoon, obby, horror game, or even your own mini-game engine.";
-    }
-
-
-    if (
-        lower.includes("idea") ||
-        lower.includes("project")
-    ) {
-
-        return "💡 Project idea: build a personal desktop OS in the browser with apps, games, settings, files, and your own AI assistant.";
-    }
-
-
-    if (
-        lower.includes("who are you") ||
-        lower.includes("what are you")
-    ) {
-
-        return "I'm TEKKO AI v1.0 🤖 — a browser-based AI assistant prototype.";
-    }
-
-
-    if (
-        lower.includes("thank")
-    ) {
-
-        return "You're welcome! 😎";
-    }
-
-
-    const replies = [
-
-        "Interesting! 🤔 Tell me more.",
-
-        "I'm listening! 👀",
-
-        "That's a cool idea! 🔥",
-
-        "Hmm... let's figure this out together. 🧠",
-
-        "TEKKO is thinking... 🤖",
-
-        "I like where this is going! ⚡"
-
-    ];
-
-
-    return replies[
-        Math.floor(
-            Math.random() *
-            replies.length
-        )
-    ];
-}
-
-
-/* ======================================
-   SUGGESTION
-====================================== */
-
-function suggest(text) {
-
-    input.value = text;
-
-    input.focus();
-}
-
-
-/* ======================================
-   CLEAR CHAT
-====================================== */
-
-function clearChat() {
-
-    conversation = [];
-
-    chat.innerHTML = `
-
-        <section id="welcome">
-
-            <div class="big-logo">
-                T
-            </div>
-
-            <h2>
-                Hey! I'm TEKKO 🤖
-            </h2>
-
-            <p>
-                Your personal AI assistant.
-            </p>
-
-            <div class="suggestions">
-
-                <button
-                    class="suggestion"
-                    onclick="suggest('Give me a cool project idea')"
-                >
-                    💡 Give me an idea
-                </button>
-
-                <button
-                    class="suggestion"
-                    onclick="suggest('Help me with coding')"
-                >
-                    💻 Help with coding
-                </button>
-
-                <button
-                    class="suggestion"
-                    onclick="suggest('Tell me something interesting')"
-                >
-                    🧠 Tell me something
-                </button>
-
-            </div>
-
-        </section>
-    `;
-}
-
-
-/* ======================================
-   TEXTAREA RESIZE
-====================================== */
-
-function resize() {
-
-    input.style.height =
-        "auto";
-
-    input.style.height =
-        Math.min(
-            input.scrollHeight,
-            150
-        ) + "px";
-}
-
-
-input.addEventListener(
-    "input",
-    resize
-);
-
-
-/* ======================================
-   ENTER TO SEND
-====================================== */
-
-input.addEventListener(
-    "keydown",
-    function(event) {
-
-        if (
-            event.key === "Enter" &&
-            !event.shiftKey
-        ) {
-
-            event.preventDefault();
-
-            document
-                .querySelector(".input-area")
-                .requestSubmit();
-        }
-
-    }
-);
-
-
-console.log(
-    "🤖 TEKKO AI v1.0 loaded!"
-);
-
-</script>
+    <script src="script.js"></script>
 
 </body>
 </html>
