@@ -1,1343 +1,767 @@
 "use strict";
 
 /* =========================================================
-   TEKKO AI v2.0
+   TEKKO AI v3.5
    Browser Prototype
    ========================================================= */
 
-/* =========================
-   ELEMENTS
-========================= */
-
-const chat = document.getElementById("chat");
-const form = document.getElementById("chatForm");
-const input = document.getElementById("messageInput");
-const sendButton = document.getElementById("sendButton");
-
-const clearButton = document.getElementById("clearButton");
-const newChatButton = document.getElementById("newChatButton");
-
-const sidebar = document.getElementById("sidebar");
-const menuButton = document.getElementById("menuButton");
-const closeSidebar = document.getElementById("closeSidebar");
-const sidebarOverlay = document.getElementById("sidebarOverlay");
-
-const chatHistory = document.getElementById("chatHistory");
-const searchChats = document.getElementById("searchChats");
-
-const themeButton = document.getElementById("themeButton");
-
-const settingsButton = document.getElementById("settingsButton");
-const settingsModal = document.getElementById("settingsModal");
-const closeSettings = document.getElementById("closeSettings");
-
-const typingToggle = document.getElementById("typingToggle");
-const historyToggle = document.getElementById("historyToggle");
-const enterToggle = document.getElementById("enterToggle");
-
-const deleteHistoryButton =
-    document.getElementById("deleteHistoryButton");
-
-
-/* =========================
-   STORAGE
-========================= */
+const $ = id => document.getElementById(id);
 
 const STORAGE = {
-    chats: "tekko_v2_chats",
-    theme: "tekko_v2_theme",
-    settings: "tekko_v2_settings"
+  chats: "tekko_v35_chats",
+  settings: "tekko_v35_settings",
+  theme: "tekko_v35_theme"
 };
 
+let chats = JSON.parse(localStorage.getItem(STORAGE.chats) || "[]");
 
-/* =========================
-   STATE
-========================= */
+let settings = JSON.parse(
+  localStorage.getItem(STORAGE.settings) ||
+  JSON.stringify({
+    typing: true,
+    history: true,
+    enter: true
+  })
+);
 
-let chats = loadChats();
+let currentChat = null;
+let currentMode = "General";
 
-let currentChatId = null;
+/* =========================================================
+   INITIALIZE
+   ========================================================= */
 
-let conversation = [];
+document.addEventListener("DOMContentLoaded", () => {
 
-let isThinking = false;
+  loadTheme();
+  loadSettings();
+  renderChatList();
 
-let settings = loadSettings();
+  if (chats.length > 0 && settings.history) {
+    openChat(chats[0].id);
+  } else {
+    createNewChat(false);
+  }
 
+  setupEvents();
 
-/* =========================
-   DEFAULT SETTINGS
-========================= */
+});
 
-function loadSettings() {
+/* =========================================================
+   EVENTS
+   ========================================================= */
 
-    const saved =
-        localStorage.getItem(STORAGE.settings);
+function setupEvents() {
 
-    if (!saved) {
+  $("newChat").addEventListener("click", () => {
+    createNewChat(true);
+  });
 
-        return {
-            typing: true,
-            history: true,
-            enterToSend: true
-        };
+  $("sendButton").addEventListener("click", sendMessage);
 
+  $("messageInput").addEventListener("keydown", e => {
+
+    if (
+      e.key === "Enter" &&
+      !e.shiftKey &&
+      settings.enter
+    ) {
+      e.preventDefault();
+      sendMessage();
     }
 
-    try {
+  });
 
-        return {
-            typing: saved.typing !== false,
-            history: saved.history !== false,
-            enterToSend: saved.enterToSend !== false
-        };
+  $("messageInput").addEventListener("input", autoResize);
 
-    } catch {
+  $("chatSearch").addEventListener("input", renderChatList);
 
-        return {
-            typing: true,
-            history: true,
-            enterToSend: true
-        };
-    }
-}
+  $("themeButton").addEventListener("click", toggleTheme);
 
+  $("settingsButton").addEventListener("click", () => {
+    $("settingsOverlay").classList.remove("hidden");
+  });
 
-/* =========================
-   LOAD CHATS
-========================= */
+  $("closeSettings").addEventListener("click", () => {
+    $("settingsOverlay").classList.add("hidden");
+  });
 
-function loadChats() {
+  $("clearChat").addEventListener("click", clearCurrentChat);
 
-    const saved =
-        localStorage.getItem(STORAGE.chats);
+  $("deleteHistory").addEventListener("click", deleteHistory);
 
-    if (!saved) return [];
+  $("mobileMenu").addEventListener("click", () => {
+    $("sidebar").classList.toggle("open");
+  });
 
-    try {
+  $("imageButton").addEventListener("click", openImagePanel);
 
-        const parsed = JSON.parse(saved);
+  $("closeImagePanel").addEventListener("click", closeImagePanel);
 
-        return Array.isArray(parsed)
-            ? parsed
-            : [];
+  $("generateImage").addEventListener("click", createImage);
 
-    } catch {
+  $("typingSetting").addEventListener("change", saveSettings);
 
-        return [];
-    }
-}
+  $("historySetting").addEventListener("change", saveSettings);
 
+  $("enterSetting").addEventListener("change", saveSettings);
 
-/* =========================
-   SAVE CHATS
-========================= */
+  document.querySelectorAll(".mode-card").forEach(card => {
 
-function saveChats() {
+    card.addEventListener("click", () => {
 
-    if (!settings.history) return;
+      const mode = card.dataset.mode;
 
-    localStorage.setItem(
-        STORAGE.chats,
-        JSON.stringify(chats)
-    );
-}
+      if (mode === "Image") {
+        openImagePanel();
+        return;
+      }
 
+      currentMode = mode;
 
-/* =========================
-   SAVE SETTINGS
-========================= */
+      $("messageInput").placeholder =
+        `${mode} mode — Message TEKKO...`;
 
-function saveSettings() {
-
-    localStorage.setItem(
-        STORAGE.settings,
-        JSON.stringify(settings)
-    );
-}
-
-
-/* =========================
-   CHAT ID
-========================= */
-
-function createId() {
-
-    return Date.now().toString() +
-        Math.random()
-            .toString(36)
-            .slice(2);
-}
-
-
-/* =========================
-   NEW CHAT
-========================= */
-
-function startNewChat() {
-
-    currentChatId = createId();
-
-    conversation = [];
-
-    renderWelcome();
-
-    input.value = "";
-
-    resizeInput();
-
-    renderHistory();
-
-    closeMobileSidebar();
-
-    input.focus();
-}
-
-
-/* =========================
-   WELCOME SCREEN
-========================= */
-
-function renderWelcome() {
-
-    chat.innerHTML = `
-        <div id="welcome" class="welcome">
-
-            <div class="welcome-logo">
-                T
-            </div>
-
-            <h2>Hey! I'm TEKKO 🤖</h2>
-
-            <p>
-                Your AI assistant, upgraded.
-            </p>
-
-            <div class="welcome-line">
-                <span></span>
-                <b>What can I help you with?</b>
-                <span></span>
-            </div>
-
-            <div class="suggestions">
-
-                <button class="suggestion"
-                    data-message="Give me a cool project idea"
-                    type="button">
-
-                    <span>💡</span>
-
-                    <div>
-                        <strong>Project idea</strong>
-                        <small>
-                            Give me something cool to build
-                        </small>
-                    </div>
-
-                </button>
-
-                <button class="suggestion"
-                    data-message="Help me with coding"
-                    type="button">
-
-                    <span>💻</span>
-
-                    <div>
-                        <strong>Coding</strong>
-                        <small>
-                            Help me build something
-                        </small>
-                    </div>
-
-                </button>
-
-                <button class="suggestion"
-                    data-message="Tell me something interesting"
-                    type="button">
-
-                    <span>🧠</span>
-
-                    <div>
-                        <strong>Something interesting</strong>
-                        <small>
-                            Teach me something awesome
-                        </small>
-                    </div>
-
-                </button>
-
-                <button class="suggestion"
-                    data-message="Give me a Roblox game idea"
-                    type="button">
-
-                    <span>🎮</span>
-
-                    <div>
-                        <strong>Roblox</strong>
-                        <small>
-                            Give me a game idea
-                        </small>
-                    </div>
-
-                </button>
-
-            </div>
-        </div>
-    `;
-
-    setupSuggestions();
-}
-
-
-/* =========================
-   ADD MESSAGE
-========================= */
-
-function addMessage(text, role) {
-
-    const row =
-        document.createElement("div");
-
-    row.className =
-        "message-row " + role;
-
-    const bubble =
-        document.createElement("div");
-
-    bubble.className =
-        "message " +
-        (role === "user"
-            ? "user-message"
-            : "ai-message");
-
-    bubble.textContent = text;
-
-    row.appendChild(bubble);
-
-    chat.appendChild(row);
-
-    scrollToBottom();
-
-    return bubble;
-}
-
-
-/* =========================
-   TYPING INDICATOR
-========================= */
-
-function addTypingIndicator() {
-
-    const row =
-        document.createElement("div");
-
-    row.className =
-        "message-row assistant";
-
-    row.id =
-        "typingIndicator";
-
-    const bubble =
-        document.createElement("div");
-
-    bubble.className =
-        "message ai-message";
-
-    bubble.innerHTML = `
-        <div class="typing">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-    `;
-
-    row.appendChild(bubble);
-
-    chat.appendChild(row);
-
-    scrollToBottom();
-}
-
-
-/* =========================
-   REMOVE TYPING
-========================= */
-
-function removeTypingIndicator() {
-
-    const indicator =
-        document.getElementById(
-            "typingIndicator"
-        );
-
-    if (indicator) {
-        indicator.remove();
-    }
-}
-
-
-/* =========================
-   SCROLL
-========================= */
-
-function scrollToBottom() {
-
-    requestAnimationFrame(() => {
-
-        chat.scrollTo({
-            top: chat.scrollHeight,
-            behavior: "smooth"
-        });
+      $("messageInput").focus();
 
     });
+
+  });
+
 }
 
-
-/* =========================
-   SEND MESSAGE
-========================= */
-
-async function sendMessage(text) {
-
-    text = text.trim();
-
-    if (!text || isThinking) return;
-
-    const welcome =
-        document.getElementById("welcome");
-
-    if (welcome) {
-        welcome.remove();
-    }
-
-    addMessage(text, "user");
-
-    conversation.push({
-        role: "user",
-        content: text
-    });
-
-    input.value = "";
-
-    resizeInput();
-
-    isThinking = true;
-
-    input.disabled = true;
-    sendButton.disabled = true;
-
-    addTypingIndicator();
-
-    await wait(650);
-
-    removeTypingIndicator();
-
-    const response =
-        generateLocalResponse(text);
-
-    if (settings.typing) {
-
-        const bubble =
-            addMessage("", "assistant");
-
-        await typeResponse(
-            bubble,
-            response
-        );
-
-    } else {
-
-        addMessage(
-            response,
-            "assistant"
-        );
-
-    }
-
-    conversation.push({
-        role: "assistant",
-        content: response
-    });
-
-    saveCurrentChat();
-
-    isThinking = false;
-
-    input.disabled = false;
-    sendButton.disabled = false;
-
-    input.focus();
-
-    renderHistory();
-}
-
-
-/* =========================
-   TYPE RESPONSE
-========================= */
-
-function typeResponse(element, text) {
-
-    return new Promise(resolve => {
-
-        let index = 0;
-
-        const speed = 12;
-
-        function type() {
-
-            if (index >= text.length) {
-
-                resolve();
-
-                return;
-            }
-
-            element.textContent +=
-                text[index];
-
-            index++;
-
-            scrollToBottom();
-
-            setTimeout(type, speed);
-        }
-
-        type();
-
-    });
-}
-
-
-/* =========================
-   WAIT
-========================= */
-
-function wait(ms) {
-
-    return new Promise(resolve => {
-
-        setTimeout(resolve, ms);
-
-    });
-}
-
-
-/* =========================
-   SAVE CURRENT CHAT
-========================= */
-
-function saveCurrentChat() {
-
-    if (!settings.history) return;
-
-    if (conversation.length === 0) return;
-
-    const firstUserMessage =
-        conversation.find(
-            message =>
-                message.role === "user"
-        );
-
-    const title =
-        firstUserMessage
-            ? firstUserMessage.content
-            : "New Chat";
-
-    const existing =
-        chats.find(
-            chatItem =>
-                chatItem.id === currentChatId
-        );
-
-    if (existing) {
-
-        existing.title = title;
-
-        existing.messages =
-            conversation;
-
-        existing.updated =
-            Date.now();
-
-    } else {
-
-        chats.unshift({
-
-            id: currentChatId,
-
-            title: title,
-
-            messages: conversation,
-
-            updated: Date.now()
-
-        });
-
-    }
-
-    chats =
-        chats
-            .sort(
-                (a, b) =>
-                    b.updated - a.updated
-            )
-            .slice(0, 50);
-
+/* =========================================================
+   CHAT CREATION
+   ========================================================= */
+
+function createNewChat(save = true) {
+
+  const chat = {
+    id: Date.now().toString(),
+    title: "New Chat",
+    mode: "General",
+    messages: []
+  };
+
+  currentChat = chat;
+
+  if (save && settings.history) {
+    chats.unshift(chat);
     saveChats();
+  }
+
+  $("messages").innerHTML = "";
+  $("welcome").classList.remove("hidden");
+
+  renderChatList();
+
 }
 
+/* =========================================================
+   OPEN CHAT
+   ========================================================= */
 
-/* =========================
-   LOAD CHAT
-========================= */
+function openChat(id) {
 
-function loadChat(id) {
+  const chat = chats.find(c => c.id === id);
 
-    const selected =
-        chats.find(
-            item => item.id === id
-        );
+  if (!chat) return;
 
-    if (!selected) return;
+  currentChat = chat;
+  currentMode = chat.mode || "General";
 
-    currentChatId =
-        selected.id;
+  $("welcome").classList.toggle(
+    "hidden",
+    chat.messages.length > 0
+  );
 
-    conversation =
-        Array.isArray(selected.messages)
-            ? selected.messages
-            : [];
+  $("messages").innerHTML = "";
 
-    chat.innerHTML = "";
+  chat.messages.forEach(message => {
 
-    conversation.forEach(message => {
-
-        addMessage(
-            message.content,
-            message.role === "user"
-                ? "user"
-                : "assistant"
-        );
-
-    });
-
-    renderHistory();
-
-    closeMobileSidebar();
-
-    input.focus();
-}
-
-
-/* =========================
-   HISTORY
-========================= */
-
-function renderHistory() {
-
-    chatHistory.innerHTML = "";
-
-    if (!settings.history) {
-
-        chatHistory.innerHTML = `
-            <div class="history-empty">
-                Chat history is disabled.
-            </div>
-        `;
-
-        return;
-    }
-
-    const query =
-        searchChats.value
-            .toLowerCase()
-            .trim();
-
-    const filtered =
-        chats.filter(chatItem =>
-            chatItem.title
-                .toLowerCase()
-                .includes(query)
-        );
-
-    if (filtered.length === 0) {
-
-        chatHistory.innerHTML = `
-            <div class="history-empty">
-                No saved chats yet.
-            </div>
-        `;
-
-        return;
-    }
-
-    filtered.forEach(chatItem => {
-
-        const button =
-            document.createElement("button");
-
-        button.type = "button";
-
-        button.className =
-            "history-item" +
-            (
-                chatItem.id === currentChatId
-                    ? " active"
-                    : ""
-            );
-
-        button.innerHTML = `
-            <span class="history-icon">💬</span>
-            <span class="history-text"></span>
-        `;
-
-        button
-            .querySelector(".history-text")
-            .textContent =
-                chatItem.title;
-
-        button.addEventListener(
-            "click",
-            () => loadChat(chatItem.id)
-        );
-
-        chatHistory.appendChild(button);
-
-    });
-}
-
-
-/* =========================
-   DELETE HISTORY
-========================= */
-
-function deleteAllHistory() {
-
-    chats = [];
-
-    currentChatId = createId();
-
-    conversation = [];
-
-    localStorage.removeItem(
-        STORAGE.chats
+    renderMessage(
+      message.role,
+      message.text,
+      false
     );
 
-    renderHistory();
+  });
 
-    renderWelcome();
+  renderChatList();
 
-    input.focus();
+  $("sidebar").classList.remove("open");
+
 }
 
+/* =========================================================
+   SEND MESSAGE
+   ========================================================= */
 
-/* =========================
-   CLEAR CURRENT CHAT
-========================= */
+function sendMessage() {
+
+  const input = $("messageInput");
+  const text = input.value.trim();
+
+  if (!text) return;
+
+  if (!currentChat) {
+    createNewChat(true);
+  }
+
+  $("welcome").classList.add("hidden");
+
+  addMessage("user", text);
+
+  input.value = "";
+  autoResize();
+
+  const typing = showTyping();
+
+  setTimeout(() => {
+
+    typing.remove();
+
+    const response = generateResponse(text);
+
+    addMessage("ai", response);
+
+  }, settings.typing ? 700 : 100);
+
+}
+
+/* =========================================================
+   ADD MESSAGE
+   ========================================================= */
+
+function addMessage(role, text) {
+
+  if (!currentChat) return;
+
+  currentChat.messages.push({
+    role,
+    text
+  });
+
+  if (
+    currentChat.title === "New Chat" &&
+    role === "user"
+  ) {
+    currentChat.title =
+      text.length > 30
+        ? text.substring(0, 30) + "..."
+        : text;
+  }
+
+  if (settings.history) {
+    saveChats();
+  }
+
+  renderMessage(role, text, true);
+  renderChatList();
+
+}
+
+/* =========================================================
+   RENDER MESSAGE
+   ========================================================= */
+
+function renderMessage(role, text, scroll = true) {
+
+  const wrapper = document.createElement("div");
+
+  wrapper.className =
+    `message ${role === "user" ? "user" : "ai"}`;
+
+  const content = document.createElement("div");
+
+  const bubble = document.createElement("div");
+
+  bubble.className = "bubble";
+
+  bubble.textContent = text;
+
+  content.appendChild(bubble);
+
+  if (role === "ai") {
+
+    const actions = document.createElement("div");
+
+    actions.className = "message-actions";
+
+    const copy = document.createElement("button");
+
+    copy.textContent = "📋 Copy";
+
+    copy.addEventListener("click", () => {
+      navigator.clipboard.writeText(text);
+      copy.textContent = "✓ Copied";
+
+      setTimeout(() => {
+        copy.textContent = "📋 Copy";
+      }, 1200);
+    });
+
+    const regenerate = document.createElement("button");
+
+    regenerate.textContent = "↻ Regenerate";
+
+    regenerate.addEventListener("click", () => {
+
+      const response = generateResponse(
+        getLastUserMessage()
+      );
+
+      addMessage("ai", response);
+
+    });
+
+    actions.appendChild(copy);
+    actions.appendChild(regenerate);
+
+    content.appendChild(actions);
+
+  }
+
+  wrapper.appendChild(content);
+
+  $("messages").appendChild(wrapper);
+
+  if (scroll) {
+    $("chatArea").scrollTop =
+      $("chatArea").scrollHeight;
+  }
+
+}
+
+/* =========================================================
+   TYPING
+   ========================================================= */
+
+function showTyping() {
+
+  const wrapper = document.createElement("div");
+
+  wrapper.className = "message ai";
+
+  const bubble = document.createElement("div");
+
+  bubble.className = "bubble typing";
+
+  bubble.innerHTML = `
+    <span></span>
+    <span></span>
+    <span></span>
+  `;
+
+  wrapper.appendChild(bubble);
+
+  $("messages").appendChild(wrapper);
+
+  $("chatArea").scrollTop =
+    $("chatArea").scrollHeight;
+
+  return wrapper;
+
+}
+
+/* =========================================================
+   LOCAL RESPONSE ENGINE
+   ========================================================= */
+
+function generateResponse(input) {
+
+  const text = input.toLowerCase();
+
+  if (
+    text.includes("hello") ||
+    text.includes("hi") ||
+    text.includes("hey")
+  ) {
+    return `Hey! 👋 I'm TEKKO AI v3.5.
+
+I'm ready to help with coding, Roblox, studying, YouTube ideas, projects, or just a normal conversation.`;
+  }
+
+  if (
+    text.includes("who are you") ||
+    text.includes("what are you")
+  ) {
+    return `I'm TEKKO AI v3.5 🤖
+
+Your AI. Your way.
+
+This browser version includes chat history, modes, settings, image creation UI, copying, regeneration, and more.`;
+  }
+
+  if (
+    text.includes("code") ||
+    text.includes("javascript") ||
+    text.includes("html") ||
+    text.includes("css") ||
+    text.includes("python")
+  ) {
+    return `💻 CODING MODE
+
+I can help you build websites, JavaScript projects, HTML/CSS interfaces, Python programs, and debug code.
+
+Tell me what you're trying to build and what isn't working.`;
+  }
+
+  if (
+    text.includes("roblox") ||
+    text.includes("lua")
+  ) {
+    return `🎮 ROBLOX MODE
+
+I can help with Roblox Studio ideas, Lua scripting, game mechanics, UI ideas, maps, and game-development planning.
+
+What's the Roblox project you're working on?`;
+  }
+
+  if (
+    text.includes("youtube") ||
+    text.includes("video") ||
+    text.includes("thumbnail")
+  ) {
+    return `🎬 CREATOR MODE
+
+I can help with:
+
+• Video ideas
+• Titles
+• Thumbnails
+• Shorts
+• Captions
+• Video structure
+• Roblox content ideas
+
+Let's make something awesome. 🔥`;
+  }
+
+  if (
+    text.includes("school") ||
+    text.includes("study") ||
+    text.includes("homework")
+  ) {
+    return `📚 STUDY MODE
+
+I can explain school topics, work through exercises, help organize assignments, and make difficult concepts easier to understand.
+
+Send me the topic or exercise.`;
+  }
+
+  if (
+    text.includes("project") ||
+    text.includes("website")
+  ) {
+    return `🚀 PROJECT MODE
+
+Let's build it step by step.
+
+I can help with:
+• Planning
+• UI design
+• HTML
+• CSS
+• JavaScript
+• Features
+• Debugging
+• Publishing
+
+Tell me what you're building.`;
+  }
+
+  if (
+    text.includes("image") ||
+    text.includes("draw") ||
+    text.includes("picture")
+  ) {
+    return `🎨 TEKKO can prepare an image-generation prompt for your idea.
+
+Use the 🎨 button beside the message box to open the image creator.`;
+  }
+
+  if (
+    text.includes("thank")
+  ) {
+    return `You're welcome! 😎🤖`;
+  }
+
+  if (
+    text.includes("bye")
+  ) {
+    return `See you later! 👋`;
+  }
+
+  return `I understand! 🤖
+
+You said:
+
+"${input}"
+
+In the full AI-powered version of TEKKO, this is where the real AI model would generate a detailed response.
+
+For now, you can try asking about coding, Roblox, YouTube, studying, projects, or image creation.`;
+}
+
+/* =========================================================
+   IMAGE CREATION UI
+   ========================================================= */
+
+function openImagePanel() {
+
+  $("imagePanel").classList.remove("hidden");
+
+  $("imagePrompt").focus();
+
+}
+
+function closeImagePanel() {
+
+  $("imagePanel").classList.add("hidden");
+
+}
+
+function createImage() {
+
+  const prompt = $("imagePrompt").value.trim();
+
+  if (!prompt) {
+
+    $("imageResult").innerHTML = `
+      <div class="image-placeholder">
+        ✏️ Enter an image description first.
+      </div>
+    `;
+
+    return;
+  }
+
+  const style = $("imageStyle").value;
+  const ratio = $("imageRatio").value;
+
+  $("imageResult").innerHTML = `
+    <div class="image-placeholder">
+      <strong>🎨 Image request prepared!</strong>
+      <br><br>
+      Prompt: ${escapeHTML(prompt)}
+      <br>
+      Style: ${escapeHTML(style)}
+      <br>
+      Size: ${escapeHTML(ratio)}
+      <br><br>
+      <small>
+        Real image generation will be connected through
+        TEKKO's secure AI backend.
+      </small>
+    </div>
+  `;
+
+}
+
+/* =========================================================
+   CHAT LIST
+   ========================================================= */
+
+function renderChatList() {
+
+  const list = $("chatList");
+
+  list.innerHTML = "";
+
+  const query =
+    $("chatSearch").value.toLowerCase();
+
+  chats
+    .filter(chat =>
+      chat.title.toLowerCase().includes(query)
+    )
+    .forEach(chat => {
+
+      const button = document.createElement("button");
+
+      button.className =
+        "chat-item" +
+        (
+          currentChat &&
+          currentChat.id === chat.id
+            ? " active"
+            : ""
+        );
+
+      button.textContent =
+        `${chat.mode === "Image" ? "🎨" : "💬"} ${chat.title}`;
+
+      button.addEventListener("click", () => {
+        openChat(chat.id);
+      });
+
+      list.appendChild(button);
+
+    });
+
+}
+
+/* =========================================================
+   CLEAR CHAT
+   ========================================================= */
 
 function clearCurrentChat() {
 
-    conversation = [];
+  if (!currentChat) return;
 
-    currentChatId = createId();
+  currentChat.messages = [];
+  currentChat.title = "New Chat";
 
-    renderWelcome();
+  $("messages").innerHTML = "";
 
-    renderHistory();
+  $("welcome").classList.remove("hidden");
 
-    input.value = "";
+  saveChats();
+  renderChatList();
 
-    resizeInput();
-
-    input.focus();
 }
 
+/* =========================================================
+   DELETE HISTORY
+   ========================================================= */
 
-/* =========================
-   SUGGESTIONS
-========================= */
+function deleteHistory() {
 
-function setupSuggestions() {
+  localStorage.removeItem(STORAGE.chats);
 
-    const buttons =
-        document.querySelectorAll(
-            ".suggestion"
-        );
+  chats = [];
 
-    buttons.forEach(button => {
+  createNewChat(false);
 
-        button.addEventListener(
-            "click",
-            () => {
+  $("settingsOverlay").classList.add("hidden");
 
-                const message =
-                    button.dataset.message;
+  renderChatList();
 
-                if (!message) return;
-
-                input.value =
-                    message;
-
-                resizeInput();
-
-                input.focus();
-
-            }
-        );
-
-    });
 }
 
+/* =========================================================
+   SETTINGS
+   ========================================================= */
 
-/* =========================
-   INPUT SIZE
-========================= */
+function loadSettings() {
 
-function resizeInput() {
+  $("typingSetting").checked =
+    settings.typing;
 
-    input.style.height =
-        "auto";
+  $("historySetting").checked =
+    settings.history;
 
-    input.style.height =
-        Math.min(
-            input.scrollHeight,
-            150
-        ) + "px";
+  $("enterSetting").checked =
+    settings.enter;
+
 }
 
+function saveSettings() {
 
-/* =========================
-   FORM
-========================= */
+  settings.typing =
+    $("typingSetting").checked;
 
-form.addEventListener(
-    "submit",
-    event => {
+  settings.history =
+    $("historySetting").checked;
 
-        event.preventDefault();
+  settings.enter =
+    $("enterSetting").checked;
 
-        sendMessage(
-            input.value
-        );
+  localStorage.setItem(
+    STORAGE.settings,
+    JSON.stringify(settings)
+  );
 
-    }
-);
+  if (!settings.history) {
+    localStorage.removeItem(STORAGE.chats);
+  }
 
-
-/* =========================
-   ENTER KEY
-========================= */
-
-input.addEventListener(
-    "keydown",
-    event => {
-
-        if (
-            event.key === "Enter" &&
-            !event.shiftKey &&
-            settings.enterToSend
-        ) {
-
-            event.preventDefault();
-
-            form.requestSubmit();
-
-        }
-
-    }
-);
-
-
-/* =========================
-   INPUT EVENT
-========================= */
-
-input.addEventListener(
-    "input",
-    resizeInput
-);
-
-
-/* =========================
-   LOCAL AI RESPONSE ENGINE
-========================= */
-
-function generateLocalResponse(text) {
-
-    const message =
-        text.toLowerCase().trim();
-
-
-    /* GREETINGS */
-
-    if (
-        /^(hi|hello|hey|yo|hiya|sup)\b/
-            .test(message)
-    ) {
-
-        return "Heyyy! 👋😎 I'm TEKKO v2.0. What are we building today?";
-
-    }
-
-
-    /* IDENTITY */
-
-    if (
-        message.includes("who are you") ||
-        message.includes("what are you")
-    ) {
-
-        return "I'm TEKKO AI v2.0 🤖 — a browser-based AI assistant prototype with chat history, themes, typing effects, settings, and a futuristic interface.";
-
-    }
-
-
-    /* TEKKO */
-
-    if (
-        message.includes("tekko")
-    ) {
-
-        return "TEKKO online. 🤖⚡ Systems ready. Give me something to build!";
-
-    }
-
-
-    /* CODING */
-
-    if (
-        message.includes("code") ||
-        message.includes("coding") ||
-        message.includes("program") ||
-        message.includes("javascript") ||
-        message.includes("html") ||
-        message.includes("css")
-    ) {
-
-        return "💻 CODING MODE ACTIVATED!\n\nTell me what you want to build, what language you're using, and what you want it to do. I can help you plan the project and work through the code.";
-
-    }
-
-
-    /* ROBLOX */
-
-    if (
-        message.includes("roblox")
-    ) {
-
-        return "🎮 Roblox detected!\n\nIdeas you could build:\n• Tycoon\n• Simulator\n• Obby\n• Tower defense\n• Racing game\n• Horror game\n• Mini-game collection\n\nIf you're making a YouTube video, you could also turn the project into a challenge.";
-
-    }
-
-
-    /* PROJECT */
-
-    if (
-        message.includes("project") ||
-        message.includes("idea")
-    ) {
-
-        return "💡 Here's a cool idea:\n\nBuild a browser-based mini operating system with apps, games, settings, files, a notes app, and TEKKO built directly into the desktop. 👀\n\nBasically... your own tiny computer inside a website.";
-
-    }
-
-
-    /* SCHOOL */
-
-    if (
-        message.includes("school") ||
-        message.includes("homework") ||
-        message.includes("study")
-    ) {
-
-        return "📚 Study mode activated!\n\nSend me the exact question or topic you're working on and I can explain it step-by-step.";
-
-    }
-
-
-    /* YOUTUBE */
-
-    if (
-        message.includes("youtube") ||
-        message.includes("video") ||
-        message.includes("thumbnail")
-    ) {
-
-        return "📺 CREATOR MODE!\n\nA strong Roblox video usually needs:\n\n1. A clear idea\n2. An interesting opening\n3. Fast pacing\n4. Funny or surprising moments\n5. A satisfying ending\n\nAnd don't forget the thumbnail! 👀";
-
-    }
-
-
-    /* GAMES */
-
-    if (
-        message.includes("game")
-    ) {
-
-        return "🎮 Game idea:\n\n'Upgrade Everything' — players start with almost nothing and constantly upgrade their base, tools, speed, money system, and abilities.\n\nAdd random events to keep every round different. ⚡";
-
-    }
-
-
-    /* HELP */
-
-    if (
-        message.includes("help") ||
-        message.includes("how do i") ||
-        message.includes("can you")
-    ) {
-
-        return "Absolutely! 🧠 Tell me exactly what you're trying to do, and we'll figure out the next step together.";
-
-    }
-
-
-    /* THANKS */
-
-    if (
-        message.includes("thank")
-    ) {
-
-        return "You're welcome! 😎⚡";
-
-    }
-
-
-    /* BYE */
-
-    if (
-        message === "bye" ||
-        message.includes("goodbye")
-    ) {
-
-        return "See you later! 👋 TEKKO will be here.";
-
-    }
-
-
-    /* RANDOM FALLBACKS */
-
-    const responses = [
-
-        "Interesting... 👀 Tell me more about that.",
-
-        "Hmm. 🧠 Let's think about this together.",
-
-        "That's actually pretty interesting! ⚡",
-
-        "I'm listening. 👀 What happens next?",
-
-        "TEKKO is processing that... 🤖",
-
-        "Okayyy, I see where you're going with this. 😎",
-
-        "That's a cool idea. Let's build on it! 🔥",
-
-        "Got it! What would you like to do with that?",
-
-        "Interesting question! 🧠 Let's break it down."
-
-    ];
-
-    return responses[
-        Math.floor(
-            Math.random() *
-            responses.length
-        )
-    ];
 }
 
-
-/* =========================
+/* =========================================================
    THEME
-========================= */
+   ========================================================= */
 
-function applyTheme(theme) {
+function loadTheme() {
 
-    if (theme === "light") {
+  const theme =
+    localStorage.getItem(STORAGE.theme);
 
-        document.body.classList.add(
-            "light"
-        );
+  if (theme === "light") {
+    document.body.classList.add("light");
+  }
 
-    } else {
-
-        document.body.classList.remove(
-            "light"
-        );
-
-    }
-
-    localStorage.setItem(
-        STORAGE.theme,
-        theme
-    );
 }
-
 
 function toggleTheme() {
 
-    const isLight =
-        document.body.classList.contains(
-            "light"
-        );
+  document.body.classList.toggle("light");
 
-    applyTheme(
-        isLight
-            ? "dark"
-            : "light"
-    );
-}
+  const light =
+    document.body.classList.contains("light");
 
-
-/* =========================
-   MOBILE SIDEBAR
-========================= */
-
-function openMobileSidebar() {
-
-    sidebar.classList.add("open");
+  localStorage.setItem(
+    STORAGE.theme,
+    light ? "light" : "dark"
+  );
 
 }
 
+/* =========================================================
+   SAVE
+   ========================================================= */
 
-function closeMobileSidebar() {
+function saveChats() {
 
-    sidebar.classList.remove("open");
-
-}
-
-
-/* =========================
-   SETTINGS
-========================= */
-
-function openSettings() {
-
-    settingsModal.classList.remove(
-        "hidden"
-    );
+  localStorage.setItem(
+    STORAGE.chats,
+    JSON.stringify(chats)
+  );
 
 }
 
+/* =========================================================
+   HELPERS
+   ========================================================= */
 
-function closeSettingsModal() {
+function getLastUserMessage() {
 
-    settingsModal.classList.add(
-        "hidden"
-    );
+  if (!currentChat) return "";
+
+  const messages =
+    currentChat.messages;
+
+  for (let i = messages.length - 1; i >= 0; i--) {
+
+    if (messages[i].role === "user") {
+      return messages[i].text;
+    }
+
+  }
+
+  return "";
 
 }
 
+function autoResize() {
 
-/* =========================
-   SETTINGS CONTROLS
-========================= */
+  const input = $("messageInput");
 
-typingToggle.checked =
-    settings.typing;
+  input.style.height = "auto";
 
-historyToggle.checked =
-    settings.history;
+  input.style.height =
+    Math.min(input.scrollHeight, 150) + "px";
 
-enterToggle.checked =
-    settings.enterToSend;
+}
 
+function escapeHTML(text) {
 
-typingToggle.addEventListener(
-    "change",
-    () => {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 
-        settings.typing =
-            typingToggle.checked;
-
-        saveSettings();
-
-    }
-);
-
-
-historyToggle.addEventListener(
-    "change",
-    () => {
-
-        settings.history =
-            historyToggle.checked;
-
-        saveSettings();
-
-        renderHistory();
-
-    }
-);
-
-
-enterToggle.addEventListener(
-    "change",
-    () => {
-
-        settings.enterToSend =
-            enterToggle.checked;
-
-        saveSettings();
-
-    }
-);
-
-
-/* =========================
-   BUTTON EVENTS
-========================= */
-
-form.addEventListener(
-    "submit",
-    event => {
-        event.preventDefault();
-    }
-);
-
-
-/* Re-register actual sending listener */
-
-form.addEventListener(
-    "submit",
-    event => {
-
-        event.preventDefault();
-
-        sendMessage(
-            input.value
-        );
-
-    }
-);
-
-
-clearButton.addEventListener(
-    "click",
-    clearCurrentChat
-);
-
-
-newChatButton.addEventListener(
-    "click",
-    startNewChat
-);
-
-
-themeButton.addEventListener(
-    "click",
-    toggleTheme
-);
-
-
-settingsButton.addEventListener(
-    "click",
-    openSettings
-);
-
-
-closeSettings.addEventListener(
-    "click",
-    closeSettingsModal
-);
-
-
-deleteHistoryButton.addEventListener(
-    "click",
-    deleteAllHistory
-);
-
-
-menuButton.addEventListener(
-    "click",
-    openMobileSidebar
-);
-
-
-closeSidebar.addEventListener(
-    "click",
-    closeMobileSidebar
-);
-
-
-sidebarOverlay.addEventListener(
-    "click",
-    closeMobileSidebar
-);
-
-
-searchChats.addEventListener(
-    "input",
-    renderHistory
-);
-
-
-/* =========================
-   MODAL OUTSIDE CLICK
-========================= */
-
-settingsModal.addEventListener(
-    "click",
-    event => {
-
-        if (
-            event.target ===
-            settingsModal
-        ) {
-
-            closeSettingsModal();
-
-        }
-
-    }
-);
-
-
-/* =========================
-   ESCAPE
-========================= */
-
-document.addEventListener(
-    "keydown",
-    event => {
-
-        if (event.key !== "Escape")
-            return;
-
-        closeMobileSidebar();
-
-        closeSettingsModal();
-
-    }
-);
-
-
-/* =========================
-   STARTUP
-========================= */
-
-const savedTheme =
-    localStorage.getItem(
-        STORAGE.theme
-    );
-
-applyTheme(
-    savedTheme || "dark"
-);
-
-currentChatId =
-    createId();
-
-renderHistory();
-
-resizeInput();
-
-setupSuggestions();
-
-input.focus();
-
-console.log(
-    "🤖 TEKKO AI v2.0 loaded successfully!"
-);
+}
