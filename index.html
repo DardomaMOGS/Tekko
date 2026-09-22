@@ -1,245 +1,255 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#080b12">
-    <title>TEKKO AI v2.0</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TEKKO AI v3.5</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-<div class="app">
+
+  <div class="app">
 
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
 
-        <div class="sidebar-top">
-            <div class="brand">
-                <div class="logo">T</div>
-                <div>
-                    <h1>TEKKO</h1>
-                    <span>AI v2.0</span>
-                </div>
-            </div>
-
-            <button id="closeSidebar" class="icon-button mobile-only" type="button">
-                ✕
-            </button>
+      <div class="brand">
+        <div class="brand-icon">T</div>
+        <div>
+          <h1>TEKKO</h1>
+          <span>AI v3.5</span>
         </div>
+      </div>
 
-        <button id="newChatButton" class="new-chat" type="button">
-            <span>＋</span>
-            New Chat
-        </button>
+      <button class="new-chat" id="newChat">
+        ＋ New Chat
+      </button>
 
+      <div class="sidebar-section">
+        <label>SEARCH</label>
         <div class="search-box">
-            <span>⌕</span>
-            <input id="searchChats" type="text" placeholder="Search chats...">
+          <span>🔎</span>
+          <input id="chatSearch" type="text" placeholder="Search chats...">
         </div>
+      </div>
 
-        <div class="history-title">
-            <span>CHAT HISTORY</span>
-        </div>
+      <div class="sidebar-section">
+        <label>CHATS</label>
+        <div id="chatList" class="chat-list"></div>
+      </div>
 
-        <div id="chatHistory" class="chat-history"></div>
+      <div class="sidebar-bottom">
+        <button class="side-button" id="themeButton">🌙 Theme</button>
+        <button class="side-button" id="settingsButton">⚙️ Settings</button>
+      </div>
 
-        <div class="sidebar-bottom">
-            <button id="themeButton" class="sidebar-button" type="button">
-                <span>☀️</span>
-                <span>Change theme</span>
-            </button>
-
-            <button id="settingsButton" class="sidebar-button" type="button">
-                <span>⚙️</span>
-                <span>Settings</span>
-            </button>
-        </div>
     </aside>
-
-    <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
     <!-- MAIN -->
     <main class="main">
 
-        <header class="topbar">
+      <header class="topbar">
 
-            <button id="menuButton" class="icon-button menu-button" type="button">
-                ☰
+        <button class="mobile-menu" id="mobileMenu">
+          ☰
+        </button>
+
+        <div>
+          <h2>TEKKO AI</h2>
+          <div class="online">
+            <span></span>
+            Ready • v3.5
+          </div>
+        </div>
+
+        <button class="top-icon" id="clearChat" title="Clear chat">
+          🗑️
+        </button>
+
+      </header>
+
+      <!-- CHAT -->
+      <section class="chat-area" id="chatArea">
+
+        <div class="welcome" id="welcome">
+
+          <div class="big-logo">T</div>
+
+          <h2>Welcome to TEKKO</h2>
+
+          <p>
+            Your AI. Your way.
+          </p>
+
+          <div class="mode-grid">
+
+            <button class="mode-card" data-mode="General">
+              <strong>🤖</strong>
+              <span>General</span>
+              <small>Ask anything</small>
             </button>
 
-            <div class="status">
-                <div class="status-dot"></div>
-                <div>
-                    <strong>TEKKO AI</strong>
-                    <span>Online • v2.0</span>
-                </div>
-            </div>
-
-            <button id="clearButton" class="clear-button" type="button" title="Clear current chat">
-                🗑️
+            <button class="mode-card" data-mode="Coding">
+              <strong>💻</strong>
+              <span>Coding</span>
+              <small>Build & debug</small>
             </button>
-        </header>
 
-        <!-- CHAT -->
-        <section id="chat" class="chat">
+            <button class="mode-card" data-mode="Roblox">
+              <strong>🎮</strong>
+              <span>Roblox</span>
+              <small>Games & Lua</small>
+            </button>
 
-            <div id="welcome" class="welcome">
+            <button class="mode-card" data-mode="Study">
+              <strong>📚</strong>
+              <span>Study</span>
+              <small>Learn smarter</small>
+            </button>
 
-                <div class="welcome-logo">
-                    T
-                </div>
+            <button class="mode-card" data-mode="Creator">
+              <strong>🎬</strong>
+              <span>Creator</span>
+              <small>YouTube ideas</small>
+            </button>
 
-                <h2>Hey! I'm TEKKO 🤖</h2>
+            <button class="mode-card image-mode" data-mode="Image">
+              <strong>🎨</strong>
+              <span>Create Image</span>
+              <small>Turn ideas into art</small>
+            </button>
 
-                <p>
-                    Your AI assistant, upgraded.
-                </p>
-
-                <div class="welcome-line">
-                    <span></span>
-                    <b>What can I help you with?</b>
-                    <span></span>
-                </div>
-
-                <div class="suggestions">
-
-                    <button class="suggestion" data-message="Give me a cool project idea" type="button">
-                        <span>💡</span>
-                        <div>
-                            <strong>Project idea</strong>
-                            <small>Give me something cool to build</small>
-                        </div>
-                    </button>
-
-                    <button class="suggestion" data-message="Help me with coding" type="button">
-                        <span>💻</span>
-                        <div>
-                            <strong>Coding</strong>
-                            <small>Help me build something</small>
-                        </div>
-                    </button>
-
-                    <button class="suggestion" data-message="Tell me something interesting" type="button">
-                        <span>🧠</span>
-                        <div>
-                            <strong>Something interesting</strong>
-                            <small>Teach me something awesome</small>
-                        </div>
-                    </button>
-
-                    <button class="suggestion" data-message="Give me a Roblox game idea" type="button">
-                        <span>🎮</span>
-                        <div>
-                            <strong>Roblox</strong>
-                            <small>Give me a game idea</small>
-                        </div>
-                    </button>
-
-                </div>
-            </div>
-
-        </section>
-
-        <!-- INPUT -->
-        <div class="input-wrapper">
-
-            <form id="chatForm" class="input-area">
-
-                <textarea
-                    id="messageInput"
-                    rows="1"
-                    placeholder="Message TEKKO..."
-                    autocomplete="off"
-                ></textarea>
-
-                <button id="sendButton" type="submit" aria-label="Send">
-                    ➤
-                </button>
-
-            </form>
-
-            <div class="input-hint">
-                <span>Enter to send</span>
-                <span>Shift + Enter for new line</span>
-            </div>
+          </div>
 
         </div>
 
-        <footer>
-            TEKKO AI v2.0 • Browser Prototype
-        </footer>
+        <div id="messages"></div>
+
+      </section>
+
+      <!-- IMAGE PANEL -->
+      <section class="image-panel hidden" id="imagePanel">
+
+        <div class="image-header">
+          <div>
+            <h2>🎨 Create an Image</h2>
+            <p>Describe what you want TEKKO to create.</p>
+          </div>
+
+          <button id="closeImagePanel">✕</button>
+        </div>
+
+        <textarea
+          id="imagePrompt"
+          placeholder="Example: A futuristic Roblox-style gaming room with neon lights..."
+        ></textarea>
+
+        <div class="image-options">
+
+          <select id="imageStyle">
+            <option value="Cinematic">Cinematic</option>
+            <option value="Anime">Anime</option>
+            <option value="Cartoon">Cartoon</option>
+            <option value="Realistic">Realistic</option>
+            <option value="Pixel Art">Pixel Art</option>
+            <option value="Roblox Style">Roblox Style</option>
+          </select>
+
+          <select id="imageRatio">
+            <option value="1024x1024">Square</option>
+            <option value="1536x1024">Landscape</option>
+            <option value="1024x1536">Portrait</option>
+          </select>
+
+        </div>
+
+        <button class="generate-button" id="generateImage">
+          ✨ Create Image
+        </button>
+
+        <div id="imageResult" class="image-result"></div>
+
+      </section>
+
+      <!-- COMPOSER -->
+      <footer class="composer">
+
+        <button class="attach-button" id="imageButton" title="Create image">
+          🎨
+        </button>
+
+        <textarea
+          id="messageInput"
+          rows="1"
+          placeholder="Message TEKKO..."
+        ></textarea>
+
+        <button class="send-button" id="sendButton">
+          ➤
+        </button>
+
+      </footer>
 
     </main>
 
-    <!-- SETTINGS MODAL -->
-    <div id="settingsModal" class="modal hidden">
+  </div>
 
-        <div class="modal-box">
+  <!-- SETTINGS -->
+  <div class="overlay hidden" id="settingsOverlay">
 
-            <div class="modal-header">
-                <div>
-                    <h2>TEKKO Settings</h2>
-                    <p>Customize your experience.</p>
-                </div>
+    <div class="settings">
 
-                <button id="closeSettings" class="icon-button" type="button">
-                    ✕
-                </button>
-            </div>
+      <div class="settings-top">
+        <h2>⚙️ Settings</h2>
+        <button id="closeSettings">✕</button>
+      </div>
 
-            <div class="setting">
-
-                <div>
-                    <strong>Typing effect</strong>
-                    <small>Show TEKKO responses with a typing animation.</small>
-                </div>
-
-                <label class="switch">
-                    <input id="typingToggle" type="checkbox" checked>
-                    <span></span>
-                </label>
-
-            </div>
-
-            <div class="setting">
-
-                <div>
-                    <strong>Save chat history</strong>
-                    <small>Keep conversations in this browser.</small>
-                </div>
-
-                <label class="switch">
-                    <input id="historyToggle" type="checkbox" checked>
-                    <span></span>
-                </label>
-
-            </div>
-
-            <div class="setting">
-
-                <div>
-                    <strong>Enter to send</strong>
-                    <small>Press Enter to send a message.</small>
-                </div>
-
-                <label class="switch">
-                    <input id="enterToggle" type="checkbox" checked>
-                    <span></span>
-                </label>
-
-            </div>
-
-            <button id="deleteHistoryButton" class="danger-button" type="button">
-                Delete All Saved Chats
-            </button>
-
+      <div class="setting">
+        <div>
+          <strong>Typing animation</strong>
+          <p>Animate TEKKO responses.</p>
         </div>
+
+        <label class="switch">
+          <input type="checkbox" id="typingSetting" checked>
+          <span></span>
+        </label>
+      </div>
+
+      <div class="setting">
+        <div>
+          <strong>Save chat history</strong>
+          <p>Keep conversations in this browser.</p>
+        </div>
+
+        <label class="switch">
+          <input type="checkbox" id="historySetting" checked>
+          <span></span>
+        </label>
+      </div>
+
+      <div class="setting">
+        <div>
+          <strong>Enter to send</strong>
+          <p>Press Enter to send messages.</p>
+        </div>
+
+        <label class="switch">
+          <input type="checkbox" id="enterSetting" checked>
+          <span></span>
+        </label>
+      </div>
+
+      <button class="danger-button" id="deleteHistory">
+        Delete All Saved Chats
+      </button>
 
     </div>
 
-</div>
+  </div>
 
-<script src="script.js"></script>
+  <script src="script.js"></script>
+
 </body>
 </html>
